@@ -20,6 +20,21 @@ class BeamNGGame: public Game {
   private:
     int port;
     AsyncUDP beamUdp;
+
+    // Protocol control
+    bool useCustomProtocol = true;
+
+    // Ignition state tracking (edge detection)
+    bool lastIgnitionState = false;
+
+    // ===== Custom trigger states (cluster logic) =====
+    bool overSpeed120Trigger = false;
+    bool parkingBrakeTrigger = false;
+    bool can41Trigger = false;
+
+    // Engine start timing (for delayed CAN messages)
+    unsigned long engineStartTimestamp = 0;
+    bool engineWasRunning = false;
 };
 
 #endif

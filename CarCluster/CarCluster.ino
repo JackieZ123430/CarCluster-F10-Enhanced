@@ -31,7 +31,7 @@
 
 // Configure the maximum RPM value shown on the cluster
 // Leave at 0 for using the defaults based on the cluster. Change this is your cluster has different limits
-#define MAXIMUM_RPM 0
+#define MAXIMUM_RPM 7000
 
 // A correction factor for the RPM value. RPM will be multiplied by this value.
 // This enables you to fix displayed values that are slightly off, though you might not be able
@@ -40,7 +40,7 @@
 
 // Configure the maximum speed shown on the cluster (in km/h)
 // Leave at 0 for using the defaults based on the cluster. Change this is your cluster has different limits
-#define MAXIMUM_SPEED 0
+#define MAXIMUM_SPEED 260
 
 // A correction factor for the speed. Speed will be multiplied by this value.
 // This enables you to fix displayed values that are slightly off, though you might not be able
@@ -213,6 +213,7 @@ GameState game(clusterConfig);
 SimhubGame simhubGame(game);
 
 #if WIFI_ENABLED == 1
+  
   // Wifi/web portal variables
   #include "src/Other/WifiFunctions.h"
   #include "src/Other/WebDashboard.h"
@@ -319,7 +320,28 @@ void loop() {
   #if WIFI_ENABLED == 1
     webDashboard.update();
     mongoose_poll();
+    static unsigned long lastWifiCheck = 0;
+
+  if (millis() - lastWifiCheck > 5000) {
+    lastWifiCheck = millis();
+
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("WiFi Lost. Reconnecting...");
+      WiFi.disconnect(true);
+      WiFi.begin();
+      
+    }
+  }
   #endif
+  static unsigned long lastPrint = 0;
+
+  if (millis() - lastPrint > 2000) {
+    lastPrint = millis();
+    Serial.printf("Heap: %u | Min: %u\n",
+      ESP.getFreeHeap(),
+      ESP.getMinFreeHeap());
+  }
+   delay(1);
 }
 
 void readSerialJson() {

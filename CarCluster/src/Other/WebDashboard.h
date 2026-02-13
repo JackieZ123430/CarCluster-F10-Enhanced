@@ -26,6 +26,8 @@ class WebDashboard {
     void getState(struct state *data);
     void setState(struct state *data);
     void steeringWheelAction(struct mg_str params);
+    void alertStart(struct mg_str params);
+    void alertClear(struct mg_str params);
 
   private:
     GameState &gameState;

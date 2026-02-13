@@ -12,7 +12,7 @@
 struct ClusterConfiguration {
   float speedCorrectionFactor = 1.00;   // Calibration of speed gauge
   float rpmCorrectionFactor = 1.00;     // Calibration of RPM gauge
-  int maximumRPMValue = 6000;           // Set what is the maximum RPM on your cluster
+  int maximumRPMValue = 7000;           // Set what is the maximum RPM on your cluster
   int maximumSpeedValue = 260;          // Set what is the maximum speed on your cluster (in km/h)
   int minimumCoolantTemperature = 0;    // Set what is the minimum coolant temperature on your cluster (in C)
   int maximumCoolantTemperature = 200;  // Set what is the maximum coolant temperature on your cluster (in C)
@@ -111,27 +111,46 @@ class GameState {
   enum GearState gear = GearState_Auto_P;            // The gear that the car is in
   uint8_t backlightBrightness = 100;                 // Backlight brightness 0-99
   int coolantTemperature = 100;                      // Coolant temperature 50-130C
+  int oilTemperature = 100;                          // Engine oil temperature
   bool ignition = true;                              // Ignition status (set to false for accessory)
-  int fuelQuantity = 100;                            // Amount of fuel
+  int fuelQuantity = 20;                            // Amount of fuel
   int outdoorTemperature = 20;                       // Outdoor temperature (from -50 to 50)
+  unsigned long time;   // simulation time (ms)
 
   // Indicators
   bool leftTurningIndicator = false;                 // Left blinker
   bool rightTurningIndicator = false;                // Right blinker
   bool turningIndicatorsBlinking = false;             // Should blinking be controlled by the game or by this sketch?
-  bool mainLights = true;                            // Are the main lights turned on?
+  bool mainLights = false;                            // Are the main lights turned on?
   bool handbrake = false;                            // Enables handbrake signal
   bool rearFogLight = false;                         // Enable rear Fog Light indicator
   bool frontFogLight = false;                        // Enable front fog light indicator
   bool highBeam = false;                             // Enable High Beam Light
   bool doorOpen = false;                             // Simulate open doors
   bool offroadLight = false;                         // Simulates Offroad drive mode
-  uint8_t driveMode = 3;                             // Current drive mode for BMW: 1= Traction, 2= Comfort+, 4= Sport, 5= Sport+, 6= DSC off, 7= Eco pro 
+  uint8_t driveMode = 2;                             // Current drive mode for BMW: 1= Traction, 2= Comfort+, 4= Sport, 5= Sport+, 6= DSC off, 7= Eco pro 
   bool absLight = false;                             // Shows ABS Signal on dashboard
-  bool batteryLight = false;                         // Show Battery Warning.
+  bool batteryLight = true;                         // Show Battery Warning.
+
+
+  // Extended warning lights
+  bool engineLight = false;          // Check engine light
+  bool lowFuelLight = false;         // Low fuel warning
+  bool cruiseControlActive = false;  // Cruise control active
+  float cruiseControlTarget = 0;     // Cruise target speed (km/h)
+  bool escActive = false;            // ESC currently intervening
+  bool hasESC = true;                // Vehicle equipped with ESC
+  bool tcsActive = false;            // Traction control active
+  bool hasTCS = true;                // Vehicle equipped with TCS
 
   // Other stuff
   int buttonEventToProcess = 0;                      // Certain clusters have buttons that can perform actions. Set this to activate them - values are cluster dependent
+
+  // Manual alert injection (Web UI)
+  uint8_t alertId = 0;
+  bool alertStart = false;
+  bool alertClear = false;
+
 
   GameState(ClusterConfiguration configuration) {
     this->configuration = configuration;

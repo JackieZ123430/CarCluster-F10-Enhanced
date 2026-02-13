@@ -47,10 +47,10 @@ class BMWFSeriesCluster: public Cluster {
   MCP_CAN &CAN;
   CRC8 crc8Calculator;
 
-  unsigned long dashboardUpdateTime100 = 100;
+  unsigned long dashboardUpdateTime100 = 30;
   unsigned long dashboardUpdateTime1000 = 500;
   unsigned long lastDashboardUpdateTime = 0; // Timer for the fast updated variables
-  unsigned long lastDashboardUpdateTime1000ms = 0; // Timer for slow updated variables
+  unsigned long lastDashboardUpdateTime1000ms = 10; // Timer for slow updated variables
 
   uint8_t counter4Bit = 0;
   uint8_t accCounter = 0;
@@ -62,7 +62,7 @@ class BMWFSeriesCluster: public Cluster {
   void sendSpeed(int speed);
   void sendRPM(int rpm, int manualGear);
   void sendAutomaticTransmission(int gear);
-  void sendBasicDriveInfo(int engineTemperature);
+  void sendBasicDriveInfo(GameState& game, int engineTemperature);
   void sendParkBrake(bool handbrakeActive);
   void sendFuel(int fuelQuantity, uint8_t inFuelRange[], uint8_t outFuelRange[], bool isCarMini);
   void sendDistanceTravelled(int speed);
