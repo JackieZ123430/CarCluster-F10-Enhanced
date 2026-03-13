@@ -703,9 +703,17 @@ void BMWFSeriesCluster::updateWithGame(GameState& game) {
     // Game Time → Cluster Clock (HH:MM)
     // Using game.time (milliseconds since simulation start)
     // ===============================
+    sendOutsideTemperature(game.outdoorTemperature);
+
+    // ===============================
+    // 仪表盘时间显示 (0x39E)
+    // ===============================
+    // 将游戏内的毫秒运行时间转化为小时和分钟 (你也可以改成 ESP32 的真实时间)
     unsigned long totalSeconds = game.time / 1000;
     uint8_t hours = (totalSeconds / 3600) % 24;
     uint8_t minutes = (totalSeconds / 60) % 60;
+
+    sendTime(hours, minutes);
 
     // Example BMW style time broadcast frame (adjust ID if needed for your cluster)
     unsigned char timeFrame[] = { 
@@ -931,13 +939,41 @@ void BMWFSeriesCluster::sendAutomaticTransmission(GearState gear, uint8_t gearIn
 }
 
 void BMWFSeriesCluster::sendBasicDriveInfo(GameState& game, int oilTemperature) {
-    // =====================================================
-    // Safety modules only active when engine STABLE running
-    // Condition:
-    //   ignition ON
-    //   rpm >= 400
-    //   sustained for >= 500ms
-    // =====================================================
+
+    // ABS alive frame (cluster requires module online)
+    uint8_t absStatusByte = 0x14;
+    unsigned char abs1WithoutCRC[] = { (uint8_t)(0xF0 | counter4Bit), 0xFE, 0xFF, absStatusByte };
+    unsigned char abs1WithCRC[] = { crc8Calculator.get_crc8(abs1WithoutCRC, 4, 0xD8), abs1WithoutCRC[0], abs1WithoutCRC[1], abs1WithoutCRC[2], abs1WithoutCRC[3] };
+    CAN.sendMsgBuf(0x36E, 0, 5, abs1WithCRC);
+
+    // ABS secondary frame
+    unsigned char absSecondary[8] = { counter4Bit, counter4Bit, counter4Bit, counter4Bit, counter4Bit, counter4Bit, counter4Bit, counter4Bit };
+    CAN.sendMsgBuf(0xB6E, 0, 8, absSecondary);
+
+    // Alive counter safety
+    unsigned char aliveCounterSafetyWithoutCRC[] = { count, 0xFF };
+    CAN.sendMsgBuf(0xD7, 0, 2, aliveCounterSafetyWithoutCRC);
+
+    // Power Steering keep-alive (0x2A7)
+    unsigned char steeringColumnWithoutCRC[] = { (uint8_t)(0xF0 | counter4Bit), 0xFE, 0xFF, 0x14 };
+    unsigned char steeringColumnWithCRC[] = { crc8Calculator.get_crc8(steeringColumnWithoutCRC, 4, 0x9E), steeringColumnWithoutCRC[0], steeringColumnWithoutCRC[1], steeringColumnWithoutCRC[2], steeringColumnWithoutCRC[3] };
+    CAN.sendMsgBuf(0x2A7, 0, 5, steeringColumnWithCRC);
+
+    // Restraint system (0x19B)
+    unsigned char restraintWithoutCRC[] = { (uint8_t)(0x40|counter4Bit), 0x40, 0x55, 0xFD, 0xFF, 0xFF, 0xFF };
+    unsigned char restraintWithCRC[] = { crc8Calculator.get_crc8(restraintWithoutCRC, 7, 0xFF), restraintWithoutCRC[0], restraintWithoutCRC[1], restraintWithoutCRC[2], restraintWithoutCRC[3], restraintWithoutCRC[4], restraintWithoutCRC[5], restraintWithoutCRC[6] };
+    CAN.sendMsgBuf(0x19B, 0, 8, restraintWithCRC);
+
+    // EHC Signal (0x26A)
+    unsigned char EHCWithoutCRC[] = { (uint8_t)(0x40|counter4Bit), 0x40, 0x55, 0xFD, 0xFF, 0xFF, 0xFF };
+    unsigned char EHCWithCRC[] = { crc8Calculator.get_crc8(EHCWithoutCRC, 7, 0xFF), EHCWithoutCRC[0], EHCWithoutCRC[1], EHCWithoutCRC[2], EHCWithoutCRC[3], EHCWithoutCRC[4], EHCWithoutCRC[5], EHCWithoutCRC[6] };
+    CAN.sendMsgBuf(0x26A, 0, 8, EHCWithCRC);
+
+    // Restraint system 2 (0x297)
+    unsigned char restraint2WithoutCRC[] = { (uint8_t)(0xE0|counter4Bit), 0xF1, 0xF0, 0xF2, 0xF2, 0xFE };
+    unsigned char restraint2WithCRC[] = { crc8Calculator.get_crc8(restraint2WithoutCRC, 6, 0x28), restraint2WithoutCRC[0], restraint2WithoutCRC[1], restraint2WithoutCRC[2], restraint2WithoutCRC[3], restraint2WithoutCRC[4], restraint2WithoutCRC[5] };
+    CAN.sendMsgBuf(0x297, 0, 7, restraint2WithCRC);
+
 
     static unsigned long rpmStableStartTime = 0;
     static bool engineStable = false;
@@ -955,7 +991,6 @@ void BMWFSeriesCluster::sendBasicDriveInfo(GameState& game, int oilTemperature) 
     }
 
     if (!engineStable) {
-
         // Clear traction lamp
         uint8_t clear42[] = { 0x40, 42, 0x00, 0x28, 0xFF, 0xFF, 0xFF, 0xFF };
         CAN.sendMsgBuf(0x5C0, 0, 8, clear42);
@@ -975,132 +1010,9 @@ void BMWFSeriesCluster::sendBasicDriveInfo(GameState& game, int oilTemperature) 
             };
             CAN.sendMsgBuf(0x5C0, 0, 8, msg);
         }
-
-        return;
+        return; 
     }
 
-    // ===============================
-    // ABS / DSC module state logic
-    // ===============================
-
-    // Do NOT simulate ABS module fault based on ESC state
-    // ABS must stay online or cluster will latch DSC/ABS warning
-    bool absFault = false;
-
-    // Always send ABS alive frame (cluster requires module online)
-    {
-      uint8_t absStatusByte = 0x14;
-
-      unsigned char abs1WithoutCRC[] = {
-        0xF0 | counter4Bit,
-        0xFE,
-        0xFF,
-        absStatusByte
-      };
-
-      unsigned char abs1WithCRC[] = {
-        crc8Calculator.get_crc8(abs1WithoutCRC, 4, 0xD8),
-        abs1WithoutCRC[0],
-        abs1WithoutCRC[1],
-        abs1WithoutCRC[2],
-        abs1WithoutCRC[3]
-      };
-
-      CAN.sendMsgBuf(0x36E, 0, 5, abs1WithCRC);
-    }
-
-
-    // =========================================================
-    // ABS secondary frame (required for DSC/ABS online state)
-    // =========================================================
-    unsigned char absSecondary[8] = {
-      counter4Bit,
-      counter4Bit,
-      counter4Bit,
-      counter4Bit,
-      counter4Bit,
-      counter4Bit,
-      counter4Bit,
-      counter4Bit
-    };
-
-    CAN.sendMsgBuf(0xB6E, 0, 8, absSecondary);
-
-    //Alive counter safety
-    unsigned char aliveCounterSafetyWithoutCRC[] = { count, 0xFF };
-    CAN.sendMsgBuf(0xD7, 0, 2, aliveCounterSafetyWithoutCRC);
-
-    // =========================================================
-    // DSC / Steering module (OEM-style simulation)
-    // byte0 = steering lock (0x00 normal)
-    // byte1 = ESP active flag (0x01 = intervention)
-    // =========================================================
-
-
-    // ===============================
-    // Cruise Control Indicator (send ONLY when active)
-    // Prevents cluster from thinking ACC ECU is permanently present
-    // ===============================
-    uint8_t cruiseStateByte = game.cruiseControlActive ? 0xE3 : 0x00;
-
-    unsigned char cruiseWithoutCRC[] = {
-      0xF0 | counter4Bit,
-      0x00,
-      0xE0,
-      0xE1,
-      cruiseStateByte,
-      0x14,
-      0x00
-    };
-
-    unsigned char cruiseWithCRC[] = {
-      crc8Calculator.get_crc8(cruiseWithoutCRC, 7, 0x82),
-      cruiseWithoutCRC[0],
-      cruiseWithoutCRC[1],
-      cruiseWithoutCRC[2],
-      cruiseWithoutCRC[3],
-      cruiseWithoutCRC[4],
-      cruiseWithoutCRC[5],
-      cruiseWithoutCRC[6]
-    };
-
-    // CAN.sendMsgBuf(0x289, 0, 8, cruiseWithCRC);
-    // BEamng联动 不要删除
-
-
-
-    // Power Steering keep-alive
-    unsigned char steeringColumnWithoutCRC[] = { 
-      0xF0 | counter4Bit, 
-      0xFE, 
-      0xFF, 
-      0x14 
-    };
-
-    unsigned char steeringColumnWithCRC[] = {
-      crc8Calculator.get_crc8(steeringColumnWithoutCRC, 4, 0x9E),
-      steeringColumnWithoutCRC[0],
-      steeringColumnWithoutCRC[1],
-      steeringColumnWithoutCRC[2],
-      steeringColumnWithoutCRC[3]
-    };
-
-    CAN.sendMsgBuf(0x2A7, 0, 5, steeringColumnWithCRC);    
-    //Restraint system (airbag?)
-    unsigned char restraintWithoutCRC[] = { 0x40|counter4Bit, 0x40, 0x55, 0xFD, 0xFF, 0xFF, 0xFF };
-    unsigned char restraintWithCRC[] = { crc8Calculator.get_crc8(restraintWithoutCRC, 7, 0xFF), restraintWithoutCRC[0], restraintWithoutCRC[1], restraintWithoutCRC[2], restraintWithoutCRC[3], restraintWithoutCRC[4], restraintWithoutCRC[5], restraintWithoutCRC[6] };
-    CAN.sendMsgBuf(0x19B, 0, 8, restraintWithCRC);
-
-
-    //EHC
-    unsigned char EHCWithoutCRC[] = { 0x40|counter4Bit, 0x40, 0x55, 0xFD, 0xFF, 0xFF, 0xFF };
-    unsigned char EHCWithCRC[] = { crc8Calculator.get_crc8(EHCWithoutCRC, 7, 0xFF), EHCWithoutCRC[0], EHCWithoutCRC[1], EHCWithoutCRC[2], EHCWithoutCRC[3], EHCWithoutCRC[4], EHCWithoutCRC[5], EHCWithoutCRC[6] };
-    CAN.sendMsgBuf(0x26A, 0, 8, EHCWithCRC);
-
-    //Restraint system (seatbelt?)
-    unsigned char restraint2WithoutCRC[] = { 0xE0|counter4Bit, 0xF1, 0xF0, 0xF2, 0xF2, 0xFE };
-    unsigned char restraint2WithCRC[] = { crc8Calculator.get_crc8(restraint2WithoutCRC, 6, 0x28), restraint2WithoutCRC[0], restraint2WithoutCRC[1], restraint2WithoutCRC[2], restraint2WithoutCRC[3], restraint2WithoutCRC[4], restraint2WithoutCRC[5] };
-    CAN.sendMsgBuf(0x297, 0, 7, restraint2WithCRC);
 
     // ===============================
     // TPMS – F-series CC-ID (correct decimal IDs + state change only)
@@ -1504,4 +1416,27 @@ float BMWFSeriesCluster::mapRPMValueForFuelModel(int speed)
   if (normalized < 0.0f) normalized = 0.0f;
 
   return normalized;
+}
+void BMWFSeriesCluster::sendOutsideTemperature(int temperature) {
+  
+  uint8_t tempByte = (temperature * 2) + 80;
+  
+  unsigned char tempFrame[2] = { tempByte, 0xFF }; 
+  CAN.sendMsgBuf(0x2CA, 0, 2, tempFrame);
+}
+
+void BMWFSeriesCluster::sendTime(uint8_t hours, uint8_t minutes) {
+  
+  unsigned char timeFrame[8] = {
+    hours,    
+    minutes,  
+    0x00,     
+    0x01,     
+    0x01,     
+    0xDF,     
+    0x07,     
+    0xF2      
+  };
+  
+  CAN.sendMsgBuf(0x39E, 0, 8, timeFrame);
 }

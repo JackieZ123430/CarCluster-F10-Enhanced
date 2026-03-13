@@ -76,6 +76,8 @@ class BMWFSeriesCluster: public Cluster {
   void sendDriveMode(uint8_t driveMode);
   void sendAcc();
   void sendFixedLIM();
+  void sendOutsideTemperature(int temperature);
+  void sendTime(uint8_t hours, uint8_t minutes);
 
   // Maps P/R/N/D/S/M only (no gear number). Gear number handled separately via gearIndex.
   uint8_t mapGenericGearToLocalGear(GearState inputGear);
