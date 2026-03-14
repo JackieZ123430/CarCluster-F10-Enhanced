@@ -22,6 +22,10 @@ This fork introduces multiple improvements and behavior fixes for BMW F-series c
 ---
 
 ![Main image](https://github.com/JackieZ123430/CarCluster-F10-Enhanced/blob/main/Misc/main_display.jpeg?raw=true)
+
+---
+
+Click to watch youtube video:
 [![Watch the video](https://img.youtube.com/vi/0wwqyG7KJ9c/maxresdefault.jpg)](https://youtu.be/0wwqyG7KJ9c)
 ---
 
