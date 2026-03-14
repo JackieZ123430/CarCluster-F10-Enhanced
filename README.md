@@ -129,3 +129,60 @@ https://github.com/r00li/CarCluster
 
 Licensed under **GNU GPL v3**.  
 遵循 **GNU GPL v3 开源协议**。
+
+---
+
+## Credits / 项目来源
+
+This project is based on the original **CarCluster** project by r00li.
+
+本项目基于 r00li 创建的 **CarCluster** 项目进行二次开发。
+
+Original project:
+https://github.com/r00li/CarCluster
+
+---
+
+## Acknowledgements / 致谢
+
+During development, several open-source projects were referenced for research
+on BMW instrument cluster behavior, CAN messaging, and simulator integration.
+
+在开发过程中参考了多个开源项目，用于研究 BMW 仪表 CAN 报文、
+仪表行为逻辑以及模拟器集成方案。
+
+Special thanks to the authors of the following projects:
+
+
+- BMW_6WA_Controller_ESP32 – https://github.com/gizmo87898/BMW_6WA_Controller_ESP32
+- BMW_6WA_Controller_BeamNG – https://github.com/gizmo87898/BMW_6WA_Controller_BeamNG
+- Bmw-F10-Dash – https://github.com/byte-biter/Bmw-F10-Dash-
+- BMW-F20-KOMBI-Cluster-Bench-testing – https://github.com/floeplala/BMW-F20-KOMBI-Cluster-Bench-testing
+- G30_Kombi_Controller – https://github.com/gizmo87898/G30_Kombi_Controller
+- Bmw-F3x-6wa-cluster-with-simhub-for-beamng – https://github.com/CreeBoom2020/Bmw-F3x-6wa-cluster-with-simhub-for-beamng
+- BeamNG-Telemetry – https://github.com/OfficialLambdax/BeamNG-Telemetry
+- @ameFISH – code contribution and merge assistance
+
+  
+These projects provided useful insights into BMW cluster CAN messaging and
+simulation telemetry integration.
+
+这些项目为 BMW 仪表 CAN 报文结构和模拟器遥测集成提供了重要参考。
+
+---
+
+## Technical References / 技术参考
+
+The following documentation resources were used to identify BMW cluster warning
+messages and CC-ID error codes.
+
+以下资料用于确认 BMW 仪表报警信息以及 CC-ID 错误代码。
+
+BMW CC-ID error codes reference:
+
+https://www.autobulbsdirect.co.uk/blog/bmw-cc-id-error-codes/
+
+This reference was used to validate cluster warning indicators during
+development and testing.
+
+该资料在开发和测试过程中用于验证仪表报警提示逻辑。
