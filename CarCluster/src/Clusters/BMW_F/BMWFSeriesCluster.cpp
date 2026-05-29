@@ -4,6 +4,8 @@
 
 // re-edit by Xiaobai151 when 2026
 // 
+// something remove by coperight see ReadMe and Licience or commit or issue
+//
 // ####################################################################################################################
 
 #include "BMWFSeriesCluster.h"
@@ -323,28 +325,28 @@ void BMWFSeriesCluster::updateWithGame(GameState& game) {
     // CRUISE CONTROL (Simple mode)
     // ==============================
 
-    static bool lastCruiseActive = false;
-    static int lastCruiseSpeed = 0;
+    // static bool lastCruiseActive = false;
+    // static int lastCruiseSpeed = 0;
 
-    if (game.cruiseControlActive) {
+    // if (game.cruiseControlActive) {
 
-      uint8_t cruiseOn[] = { 0x40, 0x2F, 0x00, 0x29, 0xFF, 0xFF, 0xFF, 0xFF };
-      CAN.sendMsgBuf(0x5C0, 0, 8, cruiseOn);
+    //   uint8_t cruiseOn[] = { 0x40, 0x2F, 0x00, 0x29, 0xFF, 0xFF, 0xFF, 0xFF };
+    //   CAN.sendMsgBuf(0x5C0, 0, 8, cruiseOn);
 
-    } else {
+    // } else {
 
-      uint8_t cruiseOff[] = { 0x40, 0x2F, 0x00, 0x28, 0xFF, 0xFF, 0xFF, 0xFF };
-      CAN.sendMsgBuf(0x5C0, 0, 8, cruiseOff);
+    //   uint8_t cruiseOff[] = { 0x40, 0x2F, 0x00, 0x28, 0xFF, 0xFF, 0xFF, 0xFF };
+    //   CAN.sendMsgBuf(0x5C0, 0, 8, cruiseOff);
 
-      // Cruise cancelled while vehicle slowing → trigger message 59
-      if (lastCruiseActive && game.speed < lastCruiseSpeed) {
-        uint8_t msg59[] = { 0x40, 59, 0x00, 0x29, 0xFF, 0xFF, 0xFF, 0xFF };
-        CAN.sendMsgBuf(0x5C0, 0, 8, msg59);
-      }
-    }
+    //   // Cruise cancelled while vehicle slowing → trigger message 59
+    //   if (lastCruiseActive && game.speed < lastCruiseSpeed) {
+    //     uint8_t msg59[] = { 0x40, 59, 0x00, 0x29, 0xFF, 0xFF, 0xFF, 0xFF };
+    //     CAN.sendMsgBuf(0x5C0, 0, 8, msg59);
+    //   }
+    // }
 
-    lastCruiseActive = game.cruiseControlActive;
-    lastCruiseSpeed = game.speed;
+    // lastCruiseActive = game.cruiseControlActive;
+    // lastCruiseSpeed = game.speed;
 
  
 
@@ -705,15 +707,6 @@ void BMWFSeriesCluster::updateWithGame(GameState& game) {
     // ===============================
     sendOutsideTemperature(game.outdoorTemperature);
 
-    // ===============================
-    // 仪表盘时间显示 (0x39E)
-    // ===============================
-    // 将游戏内的毫秒运行时间转化为小时和分钟 (你也可以改成 ESP32 的真实时间)
-    unsigned long totalSeconds = game.time / 1000;
-    uint8_t hours = (totalSeconds / 3600) % 24;
-    uint8_t minutes = (totalSeconds / 60) % 60;
-
-    sendTime(hours, minutes);
 
     // Example BMW style time broadcast frame (adjust ID if needed for your cluster)
     unsigned char timeFrame[] = { 
@@ -747,45 +740,7 @@ void BMWFSeriesCluster::updateWithGame(GameState& game) {
 
 }
 
-void BMWFSeriesCluster::sendFixedLIM()
-{
-  /*
-   * CarCluster-style fixed LIM sender
-   *
-   * Instead of using 0x289 in mr_goofy format, this sends the LIM / SLI
-   * speed frame on 0x287, which is the format used by the newer logic.
-   *
-   * Byte layout:
-   * [0] = 0x05
-   * [1] = LIM value encoded in 5 km/h steps
-   * [2] = 0x10
-   * [3] = 0x10
-   * [4] = 0x00
-   * [5] = 0xFF
-   * [6] = 0xFF
-   * [7] = 0xFF
-   */
-
-  const uint8_t fixedLimSpeedKmh = 110;
-  uint8_t limValue = fixedLimSpeedKmh / 5;
-
-  if (limValue < 1 || limValue > 30) {
-    return;
-  }
-
-  unsigned char limFrame[] = {
-    0x05,
-    limValue,
-    0x10,
-    0x10,
-    0x00,
-    0xFF,
-    0xFF,
-    0xFF
-  };
-
-  CAN.sendMsgBuf(0x287, 0, 8, limFrame);
-}
+//remove by coperight check the readme and liciences, or commit (289)
 
 void BMWFSeriesCluster::sendIgnitionStatus(bool ignition) {
   uint8_t ignitionStatus = ignition ? 0x8A : 0x8;
@@ -964,10 +919,14 @@ void BMWFSeriesCluster::sendBasicDriveInfo(GameState& game, int oilTemperature) 
     unsigned char restraintWithCRC[] = { crc8Calculator.get_crc8(restraintWithoutCRC, 7, 0xFF), restraintWithoutCRC[0], restraintWithoutCRC[1], restraintWithoutCRC[2], restraintWithoutCRC[3], restraintWithoutCRC[4], restraintWithoutCRC[5], restraintWithoutCRC[6] };
     CAN.sendMsgBuf(0x19B, 0, 8, restraintWithCRC);
 
-    // EHC Signal (0x26A)
-    unsigned char EHCWithoutCRC[] = { (uint8_t)(0x40|counter4Bit), 0x40, 0x55, 0xFD, 0xFF, 0xFF, 0xFF };
-    unsigned char EHCWithCRC[] = { crc8Calculator.get_crc8(EHCWithoutCRC, 7, 0xFF), EHCWithoutCRC[0], EHCWithoutCRC[1], EHCWithoutCRC[2], EHCWithoutCRC[3], EHCWithoutCRC[4], EHCWithoutCRC[5], EHCWithoutCRC[6] };
-    CAN.sendMsgBuf(0x26A, 0, 8, EHCWithCRC);
+    // EHC Signal 
+    // unsigned char EHCWithoutCRC[] = { (uint8_t)(0x40|counter4Bit), 0x40, 0x55, 0xFD, 0xFF, 0xFF, 0xFF };
+    // CAN.sendMsgBuf(, 0, 8, EHCWithCRC);
+    //something has been remove by coperight check the readme and liciences, or commit 
+
+
+
+    
 
     // Restraint system 2 (0x297)
     unsigned char restraint2WithoutCRC[] = { (uint8_t)(0xE0|counter4Bit), 0xF1, 0xF0, 0xF2, 0xF2, 0xFE };
