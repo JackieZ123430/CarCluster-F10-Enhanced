@@ -4,16 +4,22 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
     branches: [main]
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   publish:
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.head_ref == 'agent/f10-better-can-optimized'
+      (github.event_name == 'pull_request_target' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.head_ref == 'agent/f10-better-can-optimized') ||
+      (github.event_name == 'issues' &&
+       github.event.issue.title == '[internal] publish optimized F10 source')
     runs-on: ubuntu-latest
     steps:
       - name: Check out main
