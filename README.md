@@ -1,195 +1,123 @@
-# CarCluster-F10-Enhanced
+# CarCluster-F10-Enhanced — F10 Optimized Build
 
-**Enhanced GPL-3.0 fork of r00li/CarCluster focused on BMW F10 cluster improvements.**  
-**基于 r00li/CarCluster 的 GPL-3.0 增强版分支，主要针对 BMW F10 仪表进行功能改进。**
+这是面向 **BMW F10 / F 系列仪表硬件环境** 的精简版本。项目保留实际使用的输入链路，并删除 BMW E 系列、BMW E46、MINI、VW MQB、VW PQ25、VW PQ46 和 MQB Passthrough 等其他车型适配。
 
-Forked from / 原项目：  
-https://github.com/r00li/CarCluster
+- Enhanced project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+- Better_CAN protocol: https://github.com/JackieZ123430/Better_CAN
+- Original project: https://github.com/r00li/CarCluster
 
-Thanks to r00li for the original CarCluster project.  
-感谢 r00li 创建原始 CarCluster 项目。
+## 保留的功能
 
----
+- BMW F10 仪表 CAN 输出
+- BeamNG + `Better_CAN.lua` UDP 协议
+- SimHub 串口 JSON 协议
+- Forza Horizon / Forza Motorsport UDP
+- Wi-Fi 配网门户
+- HTTP Web 仪表盘
+- MCP2515 CAN 接口
 
-## What is this? / 项目简介
+## 主要改动
 
-CarCluster-F10-Enhanced allows you to control a real BMW F10 instrument cluster using an ESP32 and CAN interface.  
-CarCluster-F10-Enhanced 允许使用 ESP32 和 CAN 接口驱动真实 BMW F10 仪表。
+1. **Better_CAN 完整适配**
+   - UDP 端口统一为 `4444`
+   - 接收端严格匹配 Better_CAN 的 `148` 字节数据结构
+   - 增加字段偏移和结构大小的编译期检查
+   - 修复旧接收端缺少字段、把单字节输入错误声明为 `float` 所造成的数据错位
 
-This fork introduces multiple improvements and behavior fixes for BMW F-series clusters on top of the original CarCluster project.  
-该分支在原始 CarCluster 项目的基础上，对 BMW F 系列仪表进行了多项功能改进和行为优化。
+2. **修复燃油单位问题**
+   - Better_CAN、SimHub 和 WebDashboard 统一使用 `0–100%`
+   - 旧代码按 `0.0–1.0` 截断，容易把正常燃油值当成满油
 
+3. **修复上次移除 ID 后的编译问题**
+   - 删除无实现的 `sendFixedLIM()` 调用和声明
+   - 删除未使用的 ACC/旧巡航链路
+   - 修复时间发送代码中未定义的 `hours` / `minutes`
 
-如果有任何问题欢迎添加QQ:3406210449 举报倒卖/违法售卖/BUG提交/咨询等 欢迎添加！
-BiliBili账号：https://space.bilibili.com/353124728
----
+4. **0x26A 处理**
+   - 不发送 `0x26A`
+   - 在 `BMWFSeriesCluster.cpp` 内保留 EHC / 车身高度状态链路线索
+   - 不公开载荷、计数器或 CRC 映射
 
-![Main image](https://github.com/JackieZ123430/CarCluster-F10-Enhanced/blob/main/Misc/main_display.jpeg?raw=true)
+5. **体积与运行优化**
+   - 删除其他车型源码和无关库
+   - PlatformIO 只编译 F10、Better_CAN、Forza、SimHub、Wi-Fi 和 WebDashboard 模块
+   - 关闭 WebDashboard HTTPS，仅保留 HTTP，减少固件体积
+   - 主循环加入 ESP32 task yield
+   - 清理串口超长 JSON 和无效 CAN ID
+   - 移除旧 F15 专用逻辑和错误的“ESC 持续介入后自动强制 DSC OFF”逻辑
 
----
+## Better_CAN 安装
 
-Click to watch youtube video:
-[![Watch the video](https://img.youtube.com/vi/0wwqyG7KJ9c/maxresdefault.jpg)](https://youtu.be/0wwqyG7KJ9c)
----
+项目内提供：
 
-## Key Enhancements / 主要改进
+```text
+BeamNG/Better_CAN.lua
+```
 
-Compared to the original CarCluster implementation, this fork introduces a number of functional improvements for BMW F-series clusters.
+打开文件并修改：
 
-与原始 CarCluster 项目相比，本分支增加了多项针对 BMW F 系列仪表的功能改进。
+```lua
+local targetAddress = "192.168.31.61"
+```
 
-Main additions include:  
-主要新增功能包括：
+把它改成 ESP32 连接 Wi-Fi 后在串口监视器中显示的 IP 地址。发送端口保持：
 
-- **Auto Hold support**  
-  Auto Hold 图标与状态支持
+```text
+4444
+```
 
-- **Tire puncture / TPMS warning detection**  
-  爆胎检测 / 胎压报警提示
+## 默认网络端口
 
-- **Door open detection**  
-  车门开启检测与警告显示
+| 功能 | 端口 |
+|---|---:|
+| Better_CAN / BeamNG UDP | 4444 |
+| Forza UDP | 1101 |
+| WebDashboard HTTP | 80 |
 
-- **Correct D gear display logic**  
-  修复 D 档显示逻辑
+## 编译
 
-- **Neutral (N) gear warning**  
-  增加 N 档警告提示
+推荐使用 Visual Studio Code + PlatformIO：
 
-- **Improved tachometer behavior**  
-  优化转速表逻辑，使转速变化更加流畅
+```bash
+pio run
+pio run -t upload
+pio device monitor -b 921600
+```
 
-- **Ignition self-check simulation**  
-  模拟点火未启动时的仪表故障灯自检
+默认硬件参数：
 
-- **Sport (S) and Manual (M) gear display support**  
-  支持 S 档 / M 档显示
+- ESP32 Dev Module
+- MCP2515
+- CAN：500 kbit/s
+- MCP2515 晶振：8 MHz
+- CS：GPIO 5
+- INT：GPIO 2
 
-- **Cruise control indicator support**  
-  增加定速巡航图标显示
+晶振不是 8 MHz 时，需要修改 `CarCluster/CarCluster.ino` 中的 `MCP_8MHZ`。
 
-- **Engine temperature warning display**  
-  增加发动机温度警告提示
+## 目录说明
 
-- **Web steering wheel button fix**  
-  修复原项目 Web 界面方向盘按钮无法正常工作的情况
+```text
+CarCluster/                 ESP32 主程序
+CarCluster/src/Clusters/    仅保留 BMW_F
+CarCluster/src/Games/       Better_CAN、Forza、SimHub
+CarCluster/src/Other/       Wi-Fi 与 WebDashboard
+BeamNG/Better_CAN.lua       BeamNG UDP 发送端
+Misc/                       F10 接线和使用资料
+```
 
-- **Various additional improvements and behavior fixes**  
-  以及其他多项仪表行为优化和功能改进等
+## 协议兼容规则
 
----
+Better_CAN UDP 字段不得随意删除或重排。即使某些字段固定输出 `0`，仍然必须保留其字节位置，否则后续字段会整体错位。
 
-## Integration with Better_CAN / 与 Better_CAN 集成
+当前接收结构：
 
-This project can optionally work together with:
+- 总长度：`148 bytes`
+- `cruiseControlTarget` 偏移：`52`
+- `airspeedKmh` 偏移：`76`
+- `brakeOverHeatFL` 偏移：`100`
+- `taillightInnerR` 偏移：`145`
 
-该项目可以与以下项目配合使用：
+## License
 
-https://github.com/JackieZ123430/Better_CAN
-
-Better_CAN provides a telemetry-to-CAN bridge for BeamNG and other simulation environments.
-
-Better_CAN 提供模拟器遥测数据 → CAN 总线的桥接功能。
-
-Architecture overview / 架构示意：
-
-
-BeamNG → Better_CAN → CarCluster-F10-Enhanced → BMW F10 Cluster
-
-
----
-
-## Hardware Requirements / 硬件需求
-
-Same hardware requirements as the original CarCluster project:
-
-与原始 CarCluster 项目相同的硬件需求：
-
-- ESP32 development board  
-- MCP2515 CAN module  
-- 12V power supply  
-- BMW F10 instrument cluster  
-
----
-
-## Installation / 安装
-
-Installation process remains the same as the upstream project:
-
-安装流程与原项目一致：
-
-1. Install ESP32 support in Arduino IDE  
-2. Open `CarCluster.ino`  
-3. Select BMW F cluster configuration  
-4. Upload to ESP32  
-5. Configure network or serial communication
-
----
-
-## License / 许可证
-
-This project is a derivative work of:
-
-该项目基于以下项目：
-
-https://github.com/r00li/CarCluster
-
-Licensed under **GNU GPL v3**.  
-遵循 **GNU GPL v3 开源协议**。
-
----
-
-## Credits / 项目来源
-
-This project is based on the original **CarCluster** project by r00li.
-
-本项目基于 r00li 创建的 **CarCluster** 项目进行二次开发。
-
-Original project:
-https://github.com/r00li/CarCluster
-
----
-
-## Acknowledgements / 致谢
-
-During development, several open-source projects were referenced for research
-on BMW instrument cluster behavior, CAN messaging, and simulator integration.
-
-在开发过程中参考了多个开源项目，用于研究 BMW 仪表 CAN 报文、
-仪表行为逻辑以及模拟器集成方案。
-
-Special thanks to the authors of the following projects:
-
-
-- BMW_6WA_Controller_ESP32 – https://github.com/gizmo87898/BMW_6WA_Controller_ESP32
-- BMW_6WA_Controller_BeamNG – https://github.com/gizmo87898/BMW_6WA_Controller_BeamNG
-- Bmw-F10-Dash – https://github.com/byte-biter/Bmw-F10-Dash-
-- BMW-F20-KOMBI-Cluster-Bench-testing – https://github.com/floeplala/BMW-F20-KOMBI-Cluster-Bench-testing
-- G30_Kombi_Controller – https://github.com/gizmo87898/G30_Kombi_Controller
-- Bmw-F3x-6wa-cluster-with-simhub-for-beamng – https://github.com/CreeBoom2020/Bmw-F3x-6wa-cluster-with-simhub-for-beamng
-- BeamNG-Telemetry – https://github.com/OfficialLambdax/BeamNG-Telemetry
-- @ameFISH – code contribution and merge assistance
-
-  
-These projects provided useful insights into BMW cluster CAN messaging and
-simulation telemetry integration.
-
-这些项目为 BMW 仪表 CAN 报文结构和模拟器遥测集成提供了重要参考。
-
----
-
-## Technical References / 技术参考
-
-The following documentation resources were used to identify BMW cluster warning
-messages and CC-ID error codes.
-
-以下资料用于确认 BMW 仪表报警信息以及 CC-ID 错误代码。
-
-BMW CC-ID error codes reference:
-
-https://www.autobulbsdirect.co.uk/blog/bmw-cc-id-error-codes/
-
-This reference was used to validate cluster warning indicators during
-development and testing.
-
-该资料在开发和测试过程中用于验证仪表报警提示逻辑。
+固件项目继续遵循仓库内的 **GNU GPL v3**。Better_CAN Lua 文件保留其文件头内单独声明的使用条件。原项目作者与第三方库版权信息不得删除。

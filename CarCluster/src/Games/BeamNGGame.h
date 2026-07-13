@@ -1,46 +1,23 @@
 // ####################################################################################################################
-// 
-// Code part of CarCluster project by Andrej Rolih. See .ino file more details
-// 
+// Better_CAN / BeamNG UDP integration for BMW F10
+// https://github.com/JackieZ123430/Better_CAN
 // ####################################################################################################################
 
-#ifndef BEAM_NG_GAME
-#define BEAM_NG_GAME
+#ifndef BEAM_NG_GAME_H
+#define BEAM_NG_GAME_H
 
 #include "Arduino.h"
-#include "AsyncUDP.h" // For game integration (system library part of ESP core)
-
+#include "AsyncUDP.h"
 #include "GameSimulation.h"
 
-class BeamNGGame: public Game {
-  public:
-    BeamNGGame(GameState& game, int port);
-    void begin();
+class BeamNGGame : public Game {
+ public:
+  BeamNGGame(GameState& game, uint16_t port);
+  void begin() override;
 
-  private:
-    int port;
-    AsyncUDP beamUdp;
-
-    // Protocol control
-    bool useCustomProtocol = true;
-
-    // Ignition state tracking (edge detection)
-    bool lastIgnitionState = false;
-
-    // ===== Custom trigger states (cluster logic) =====
-    bool overSpeed120Trigger = false;
-    bool parkingBrakeTrigger = false;
-    bool can41Trigger = false;
-
-    // Engine start timing (for delayed CAN messages)
-    unsigned long engineStartTimestamp = 0;
-    bool engineWasRunning = false;
-
-    // ===== Extended physics inputs (for custom CAN realism) =====
-    float lastThrottleInput = 0.0f;
-    float lastBrakeInput = 0.0f;
-    float lastEngineLoad = 0.0f;
-    float lastAirspeedKmh = 0.0f;
+ private:
+  uint16_t port;
+  AsyncUDP beamUdp;
 };
 
 #endif

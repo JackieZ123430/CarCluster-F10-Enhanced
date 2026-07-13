@@ -1,25 +1,22 @@
 // ####################################################################################################################
-// 
-// Code part of CarCluster project by Andrej Rolih. See .ino file more details
-// 
+// Forza UDP integration retained for the BMW F10 build
 // ####################################################################################################################
 
-#ifndef FORZA_HORIZON_GAME
-#define FORZA_HORIZON_GAME
+#ifndef FORZA_HORIZON_GAME_H
+#define FORZA_HORIZON_GAME_H
 
 #include "Arduino.h"
-#include "AsyncUDP.h" // For game integration (system library part of ESP core)
-
+#include "AsyncUDP.h"
 #include "GameSimulation.h"
 
-class ForzaHorizonGame: public Game {
-  public:
-    ForzaHorizonGame(GameState& game, int port);
-    void begin();
+class ForzaHorizonGame : public Game {
+ public:
+  ForzaHorizonGame(GameState& game, uint16_t port);
+  void begin() override;
 
-  private:
-    int port;
-    AsyncUDP forzaUdp;
+ private:
+  uint16_t port;
+  AsyncUDP forzaUdp;
 };
 
 #endif

@@ -48,11 +48,17 @@ void WebDashboard::setState(struct state *data) {
   gameState.rightTurningIndicator = data->right_indicator;
   gameState.mainLights = data->main_lights;
   gameState.doorOpen = data->door_open;
+  // The dashboard exposes one generic door switch; map it to the F10 front-left door.
+  gameState.doorFL = data->door_open;
+  gameState.doorFR = false;
+  gameState.doorRL = false;
+  gameState.doorRR = false;
   gameState.offroadLight = data->dsc;
   gameState.absLight = data->abs;
   gameState.gear = mapLocalGearToGenericGear(data->gear);
   gameState.backlightBrightness = data->backlight;
   gameState.coolantTemperature = data->coolant_temp;
+  gameState.oilTemperature = data->coolant_temp;
   gameState.handbrake = data->handbrake;
   gameState.ignition = data->ignition;
   gameState.driveMode = mapLocalDriveModeToGenericDriveMode(data->drive_mode);
@@ -70,10 +76,12 @@ void WebDashboard::steeringWheelAction(struct mg_str params) {
 }
 
 void WebDashboard::alertStart(struct mg_str params) {
+  (void)params;
   gameState.alertStart = true;
 }
 
 void WebDashboard::alertClear(struct mg_str params) {
+  (void)params;
   gameState.alertClear = true;
 }
 
@@ -93,7 +101,8 @@ const char* WebDashboard::mapGenericGearToLocalGear(GearState inputGear) {
     case GearState_Auto_R: return "R"; break;
     case GearState_Auto_N: return "N"; break;
     case GearState_Auto_D: return "D"; break;
-    case GearState_Auto_S: return "S"; break;
+    case GearState_Auto_S: return "S";
+    default: return "P";
   }
 }
 
@@ -134,7 +143,8 @@ const char* WebDashboard::mapGenericDriveModeToLocalDriveMode(uint8_t driveMode)
     case 4: return "Sport"; break;
     case 5: return "Sport+"; break;
     case 6: return "DSC off"; break;
-    case 7: return "Eco pro"; break;
+    case 7: return "Eco pro";
+    default: return "Comfort";
   }
 }
 
