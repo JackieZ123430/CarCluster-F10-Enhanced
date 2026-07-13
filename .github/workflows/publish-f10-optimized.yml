@@ -1,0 +1,64 @@
+name: Publish F10 optimized source
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/f10-better-can-optimized'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Reconstruct and verify optimized source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin agent/f10-better-can-optimized
+          mkdir -p /tmp/f10-patch
+          : > /tmp/f10-patch/optimized_patch.tar.gz.b64
+          for part in part00 part01 part02 part03_00 part03_01 part03_02 part03_03 part04; do
+            git show "origin/agent/f10-better-can-optimized:.patch/${part}" >> /tmp/f10-patch/optimized_patch.tar.gz.b64
+          done
+          base64 --decode /tmp/f10-patch/optimized_patch.tar.gz.b64 > /tmp/f10-patch/optimized_patch.tar.gz
+          echo "06ce060fb6ea93c7a2628a1f05bfc68c34c5cef02433076ad829619e59c0fe6b  /tmp/f10-patch/optimized_patch.tar.gz" | sha256sum --check
+
+      - name: Apply source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf /tmp/f10-patch/optimized_patch.tar.gz -C .
+          while IFS= read -r path; do
+            [ -n "$path" ] && rm -rf -- "$path"
+          done < .patch/delete_manifest.txt
+          rm -rf .patch
+          rm -f .github/workflows/publish-f10-optimized.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+
+      - name: Commit optimized project to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Optimize F10 build and adapt Better_CAN"
+          git push origin HEAD:main
+
+      - name: Delete staging branch
+        if: success()
+        shell: bash
+        run: git push origin --delete agent/f10-better-can-optimized || true
