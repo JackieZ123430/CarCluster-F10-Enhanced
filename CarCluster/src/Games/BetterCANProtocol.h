@@ -1,12 +1,16 @@
 // ####################################################################################################################
-//
 // Better_CAN UDP wire protocol (148 bytes)
+// Author / maintainer: JackieZ123430
 // Source project: https://github.com/JackieZ123430/Better_CAN
 // Consumer project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+// Original upstream project: https://github.com/r00li/CarCluster
 //
-// This definition intentionally preserves every transmitted byte, including fields that Better_CAN currently emits as
-// zero. Do not remove or reorder members unless both sender and receiver are versioned together.
+// 仅供个人学习、研究及非商业用途。禁止倒卖、付费分发或包装成收费产品。
+// 如果你通过第三方付费获得本项目，请及时申请退款，并保留商品页面和付款记录后举报卖家。
+// Personal learning, research and non-commercial use only. Preserve author and project attribution.
 //
+// The packet size and field offsets are kept stable for compatibility with existing Better_CAN senders.
+// Reserved storage is ignored by the F10 receiver and must not be repurposed without versioning both endpoints.
 // ####################################################################################################################
 
 #ifndef BETTER_CAN_PROTOCOL_H
@@ -63,9 +67,9 @@ struct __attribute__((packed)) BetterCANPacket {
   uint8_t checkengine;
   uint8_t lowfuel;
 
-  uint8_t cruiseControlActive;
-  uint8_t reservedAlignCruise[2];
-  float cruiseControlTarget;
+  uint8_t reservedControlByte;
+  uint8_t reservedAlignControl[2];
+  float reservedControlValue;
 
   float fuel;
   float waterTemp;
@@ -145,7 +149,7 @@ struct __attribute__((packed)) BetterCANPacket {
 };
 
 static_assert(sizeof(BetterCANPacket) == 148, "Better_CAN packet size changed");
-static_assert(offsetof(BetterCANPacket, cruiseControlTarget) == 52, "Better_CAN cruise offset changed");
+static_assert(offsetof(BetterCANPacket, reservedControlValue) == 52, "Better_CAN reserved-control offset changed");
 static_assert(offsetof(BetterCANPacket, airspeedKmh) == 76, "Better_CAN airspeed offset changed");
 static_assert(offsetof(BetterCANPacket, brakeOverHeatFL) == 100, "Better_CAN brake heat offset changed");
 static_assert(offsetof(BetterCANPacket, taillightInnerR) == 145, "Better_CAN tail offset changed");

@@ -1,7 +1,14 @@
 // ####################################################################################################################
 // BMW F10 cluster implementation
-// Original project: https://github.com/r00li/CarCluster
-// Enhanced project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+// Author / maintainer: JackieZ123430
+// Project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+// Better_CAN: https://github.com/JackieZ123430/Better_CAN
+// Original upstream project: https://github.com/r00li/CarCluster
+//
+// 仅供个人学习、研究及非商业用途。禁止倒卖、付费分发或包装成收费产品。
+// 如果你通过第三方付费获得本项目，请及时申请退款，并保留商品页面和付款记录后举报卖家。
+// Personal learning, research and non-commercial use only. Unauthorized resale or paid redistribution is prohibited.
+// Preserve author and project attribution in permitted copies and forks.
 // ####################################################################################################################
 
 #ifndef BMW_F10_CLUSTER_H

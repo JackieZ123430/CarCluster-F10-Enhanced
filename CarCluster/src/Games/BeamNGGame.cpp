@@ -1,7 +1,15 @@
 // ####################################################################################################################
 // Better_CAN / BeamNG UDP integration for BMW F10
-// Protocol source: https://github.com/JackieZ123430/Better_CAN
+// Author / maintainer: JackieZ123430
+// Better_CAN: https://github.com/JackieZ123430/Better_CAN
 // Project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+// Original upstream project: https://github.com/r00li/CarCluster
+//
+// 仅供个人学习、研究及非商业用途。禁止倒卖、付费分发或包装成收费产品。
+// 如果你通过第三方付费获得本项目，请及时申请退款，并保留商品页面和付款记录后举报卖家。
+// Personal learning, research and non-commercial use only. Preserve author and project attribution.
+//
+// Both supported packet layouts keep their original size and offsets. Reserved compatibility storage is ignored.
 // ####################################################################################################################
 
 #include "BeamNGGame.h"
@@ -17,9 +25,6 @@
 
 namespace {
 
-// Compatibility layout used by the current standalone Better_CAN repository.
-// It predates the 148-byte protocol and omits trunk, hood, drive mode and
-// detailed damage fields. Keep this layout in sync with that legacy Lua sender.
 struct LegacyBetterCANPacket {
   uint32_t time;
   float speedKmh;
@@ -66,8 +71,8 @@ struct LegacyBetterCANPacket {
   uint8_t checkengine;
   uint8_t lowfuel;
 
-  uint8_t cruiseControlActive;
-  float cruiseControlTarget;
+  uint8_t reservedControlByte;
+  float reservedControlValue;
 
   float fuel;
   float waterTemp;
@@ -85,8 +90,8 @@ struct LegacyBetterCANPacket {
 };
 
 static_assert(sizeof(LegacyBetterCANPacket) == 84, "Legacy Better_CAN packet size changed");
-static_assert(offsetof(LegacyBetterCANPacket, cruiseControlTarget) == 48,
-              "Legacy Better_CAN cruise offset changed");
+static_assert(offsetof(LegacyBetterCANPacket, reservedControlValue) == 48,
+              "Legacy Better_CAN reserved-control offset changed");
 static_assert(offsetof(LegacyBetterCANPacket, throttleInput) == 68,
               "Legacy Better_CAN throttle offset changed");
 static_assert(offsetof(LegacyBetterCANPacket, airspeedKmh) == 80,
@@ -103,8 +108,6 @@ float clampFloat(float value, float minimum, float maximum) {
 }
 
 uint8_t mapBetterCanDriveMode(uint8_t mode) {
-  // Better_CAN: 1 Comfort, 2 Sport/Race, 3 Sport+, 4 Off, 5 2WD, 6 Drift.
-  // BMW F10 cluster: 2 Comfort, 4 Sport, 5 Sport+, 6 DSC off.
   switch (mode) {
     case 1: return 2;
     case 2: return 4;
@@ -189,8 +192,6 @@ BetterCANPacket expandLegacyPacket(const LegacyBetterCANPacket& legacy) {
   data.oil = legacy.oil;
   data.checkengine = legacy.checkengine;
   data.lowfuel = legacy.lowfuel;
-  data.cruiseControlActive = legacy.cruiseControlActive;
-  data.cruiseControlTarget = legacy.cruiseControlTarget;
   data.fuel = legacy.fuel;
   data.waterTemp = legacy.waterTemp;
   data.oilTemp = legacy.oilTemp;
@@ -246,9 +247,6 @@ void applyPacketToGameState(GameState& gameState, const BetterCANPacket& data) {
   gameState.batteryLight = data.battery != 0;
   gameState.oilLight = data.oil != 0 || data.oilLevelCritical != 0 || data.starvedOfOil != 0;
   gameState.engineLight = packetShowsEngineFault(data);
-
-  gameState.cruiseControlActive = data.cruiseControlActive != 0;
-  gameState.cruiseControlTarget = clampFloat(finiteOr(data.cruiseControlTarget, 0.0f), 0.0f, 400.0f);
 
   gameState.fuelQuantity = clampFloat(finiteOr(data.fuel, 0.0f), 0.0f, 100.0f);
   gameState.lowFuelLight = data.lowfuel != 0 || gameState.fuelQuantity <= 10.0f;

@@ -1,10 +1,14 @@
 // ####################################################################################################################
-//
 // CarCluster-F10-Enhanced - F10-only optimized game state
-// Original project: https://github.com/r00li/CarCluster
-// Enhanced project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
-// Better_CAN protocol: https://github.com/JackieZ123430/Better_CAN
+// Author / maintainer: JackieZ123430
+// Project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+// Better_CAN: https://github.com/JackieZ123430/Better_CAN
+// Original upstream project: https://github.com/r00li/CarCluster
 //
+// 仅供个人学习、研究及非商业用途。禁止倒卖、付费分发或包装成收费产品。
+// 如果你通过第三方付费获得本项目，请及时申请退款，并保留商品页面和付款记录后举报卖家。
+// Personal learning, research and non-commercial use only. Unauthorized resale or paid redistribution is prohibited.
+// Hardware and CAN-bus experiments are performed at the user's own risk.
 // ####################################################################################################################
 
 #ifndef GAME_SIMULATION_H
@@ -66,22 +70,20 @@ class GameState {
 
   ClusterConfiguration configuration;
 
-  // Primary telemetry
-  int speed = 0;                          // km/h
+  int speed = 0;
   int rpm = 0;
   GearState gear = GearState_Auto_P;
   char gearLetter = 'P';
   uint8_t gearIndex = 0;
   uint8_t backlightBrightness = 100;
-  int coolantTemperature = 90;            // C
-  int oilTemperature = 90;                // C
+  int coolantTemperature = 90;
+  int oilTemperature = 90;
   bool ignition = false;
   bool engineRunning = false;
-  float fuelQuantity = 20.0f;             // 0-100 percent
+  float fuelQuantity = 20.0f;
   int outdoorTemperature = 20;
-  unsigned long time = 0;                 // simulation time in ms
+  unsigned long time = 0;
 
-  // Lamps and body state
   bool leftTurningIndicator = false;
   bool rightTurningIndicator = false;
   bool turningIndicatorsBlinking = false;
@@ -100,23 +102,20 @@ class GameState {
   bool trunkOpen = false;
   bool hoodOpen = false;
 
-  bool offroadLight = false;               // transient ESC/TCS intervention lamp
-  uint8_t driveMode = 2;                   // F10: 1 Traction, 2 Comfort, 4 Sport, 5 Sport+, 6 DSC off, 7 Eco Pro
+  bool offroadLight = false;
+  uint8_t driveMode = 2;
   bool absLight = false;
   bool batteryLight = false;
   bool oilLight = false;
   bool engineLight = false;
   bool lowFuelLight = false;
 
-  bool cruiseControlActive = false;
-  float cruiseControlTarget = 0.0f;
   bool escActive = false;
   bool escDisabled = false;
   bool hasESC = true;
   bool tcsActive = false;
   bool hasTCS = true;
 
-  // TPMS
   bool tireDefFL = false;
   bool tireDefFR = false;
   bool tireDefRL = false;
@@ -126,7 +125,6 @@ class GameState {
     return tireDefFL || tireDefFR || tireDefRL || tireDefRR;
   }
 
-  // Web dashboard actions
   int buttonEventToProcess = 0;
   uint8_t alertId = 0;
   bool alertStart = false;
