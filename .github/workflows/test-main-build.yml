@@ -24,6 +24,18 @@ jobs:
       - name: Install PlatformIO
         run: python -m pip install --upgrade platformio
 
+      - name: Apply temporary ino build-filter workaround
+        shell: bash
+        run: |
+          cp CarCluster/CarCluster.ino CarCluster/main.cpp
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('platformio.ini')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('+<CarCluster.ino>', '+<main.cpp>')
+          path.write_text(text, encoding='utf-8')
+          PY
+
       - name: Build ESP32 F10 firmware
         id: build
         shell: bash
