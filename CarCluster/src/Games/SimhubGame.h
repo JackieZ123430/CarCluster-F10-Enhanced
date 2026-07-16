@@ -1,22 +1,19 @@
 // ####################################################################################################################
-// 
-// Code part of CarCluster project by Andrej Rolih. See .ino file more details
-// 
+// SimHub serial JSON integration retained for the BMW F10 build
 // ####################################################################################################################
 
-#ifndef SIMHUB_GAME
-#define SIMHUB_GAME
+#ifndef SIMHUB_GAME_H
+#define SIMHUB_GAME_H
 
 #include "Arduino.h"
-#include "../Libs/ArduinoJson/ArduinoJson.h"  // For parsing serial data and for ESPDash ( https://github.com/bblanchon/ArduinoJson )
-
+#include "../Libs/ArduinoJson/ArduinoJson.h"
 #include "GameSimulation.h"
 
-class SimhubGame: public Game {
-  public:
-    SimhubGame(GameState& game);
-    void begin();
-    void decodeSerialData(JsonDocument& doc);
+class SimhubGame : public Game {
+ public:
+  explicit SimhubGame(GameState& game);
+  void begin() override;
+  void decodeSerialData(JsonDocument& doc);
 };
 
 #endif

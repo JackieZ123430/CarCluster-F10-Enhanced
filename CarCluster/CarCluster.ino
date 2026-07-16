@@ -1,448 +1,233 @@
 // ####################################################################################################################
 //
-// CarCluster
-// https://github.com/r00li/CarCluster
+// CarCluster-F10-Enhanced - BMW F10-only optimized build
+// Original project: https://github.com/r00li/CarCluster
+// Enhanced project: https://github.com/JackieZ123430/CarCluster-F10-Enhanced
+// Better_CAN protocol: https://github.com/JackieZ123430/Better_CAN
 //
-// By Andrej Rolih
-// https://www.r00li.com
+// Retained inputs: Better_CAN/BeamNG UDP, Forza UDP, SimHub serial JSON, Wi-Fi dashboard.
+// Other vehicle implementations have been removed from this build.
 //
 // ####################################################################################################################
 
-// --------------------------------------------------------------------
-// ----------------------- BEGIN USER CONFIGURATION -------------------
-// --------------------------------------------------------------------
-
-// To which Arduino/ESP pin have you connected the CS (chip select) pin of your CAN interface?
+// ----------------------------- Hardware configuration ---------------------------------------------------------------
 #define SPI_CS_PIN 5
-
-// To which Arduino/ESP pin have you connected the INT (interrupt) pin of your CAN interface?
 #define CAN_INT 2
 
-// Select which cluster you will be using
-// 1 = BMW F10, BMW F30 6WA (BMW F series)
-// 2 = Mini F55 (BMW F series)
-// 3 = Golf 7 (VW MQB)
-// 4 = Polo 6R (VW PQ25)
-// 5 = Skoda Superb 2 (VW PQ46)
-// 6 = BNW E60 (BMW E series)
-// 7 = BMW E46
-// 99 = Golf 7 (VW MQB) - Passthrough mode (if using an external gateway, BCM, ignition lock, ...)
-#define CLUSTER 1
-
-// Configure the maximum RPM value shown on the cluster
-// Leave at 0 for using the defaults based on the cluster. Change this is your cluster has different limits
 #define MAXIMUM_RPM 7500
-
-// A correction factor for the RPM value. RPM will be multiplied by this value.
-// This enables you to fix displayed values that are slightly off, though you might not be able
-// to ever fully get them calibrated correctly - depending on the cluster. 
-#define RPM_CORRECTION_FACTOR 1.0
-
-// Configure the maximum speed shown on the cluster (in km/h)
-// Leave at 0 for using the defaults based on the cluster. Change this is your cluster has different limits
+#define RPM_CORRECTION_FACTOR 1.0f
 #define MAXIMUM_SPEED 260
+#define SPEED_CORRECTION_FACTOR 1.0f
+#define MINIMUM_COOLANT_TEMPERATURE 50
+#define MAXIMUM_COOLANT_TEMPERATURE 150
 
-// A correction factor for the speed. Speed will be multiplied by this value.
-// This enables you to fix displayed values that are slightly off, though you might not be able
-// to ever fully get them calibrated correctly - depending on the cluster. 
-#define SPEED_CORRECTION_FACTOR 1.0
-
-// Define the minimum and maximum coolant temperature your cluster can display
-// Leave alone if your cluster has no such display
-// Leave at 0 for using the defaults based on the cluster. Change this is your cluster has different limits.
-#define MINIMUM_COOLANT_TEMPERATURE 0
-#define MAXIMUM_COOLANT_TEMPERATURE 0
-
-// Select if you want Wifi to be enabled or not.
-// Wifi gives you a web dashboard that you can use for testing
-// and the ability to connect to certain games directly, but will only work on an ESP32. 
-// If using a different board select 0.
-//
-// In order to connect to wifi the ESP will on first boot create a wifi access point called CarCluster. Connect to it (password is "carcluster"),
-// then open your web browser and navigate to 192.168.4.1 and use the UI there to connect your wifi network (if configuration popup doesn't open automatically).
-// If wifi is not connected after 3 minutes the ESP will continue normal operation and you can use it in Simhub/serial mode
-// 
-// 1 for enabled
-// 0 for disabled
 #define WIFI_ENABLED 1
-
-// Analog fuel simulation - for clusters with separate fuel level pins (currently VW PQ and MQB clusters).
-// Requires use of X9C10X digital potentiometer(s)
-// If one or two potentiometers are used depends on the specific cluster.
-// Only configure the values that make sense for your clusters - if using 1 pot leave configuration for pot 2 as is
-//
-// PIN CONFIGURATION:
-#define ANALOG_FUEL_POT_INC 14
-#define ANALOG_FUEL_POT_DIR 27
-#define ANALOG_FUEL_POT_CS1 12
-// If using dual fuel potentiometers (usually found on larger cars)
-#define ANALOG_FUEL_POT_CS2 33
-//
-// CONFIGURATION OF MINIMUM AND MAXIMUM VALUES:
-// Depends on specific sluter. If fuel percentage indicated on your cluster is wrong, change these values
-// Leave at -1 for using the defaults based on the cluster.
-#define ANALOG_FUEL_POT_MINIMUM_VALUE -1
-#define ANALOG_FUEL_POT_MAXIMUM_VALUE -1
-#define ANALOG_FUEL_POT_MINIMUM_VALUE2 -1
-#define ANALOG_FUEL_POT_MAXIMUM_VALUE2 -1
-
-// VW PQ specific pin configuration (for various non CAN based values)
-// If you are not using VW PQ based instrument cluster leave this alone
-#define VWPQ_SPRINKLER_WATER_SENSOR_PIN 4
-#define VWPQ_COOLANT_SHORTAGE_PIN 16
-#define VWPQ_OIL_PRESSURE_SWITCH_PIN 15
-#define VWPQ_HANDBRAKE_INDICATOR_PIN 13
-#define VWPQ_BRAKE_FLUID_WARNING_PIN 22
-
-// MQB Passthrough specific configuration
-#define VWMQB_PASS_CAN2_CS 25
-#define VWMQB_PASS_CAN2_INT 27
-
-// BMW E series specific configuration (E46 too)
-#define BMWE_HANDBRAKE_INDICATOR_PIN 13
-
-// BMW E46 specific configuration
-#define BMWE46_SPEED_PIN 22
-#define BMWE46_ABS_PIN 21
-#define BMWE46_FAKE_CONSUMPTION true // Show faked consumption based on RPM (we do not have injector timing data)
-
-// --------------------------------------------------------------------
-// ------------------------ END USER CONFIGURATION --------------------
-// --------------------------------------------------------------------
-
-// ------------------------ BEGIN OTHER CONFIGURATION -----------------
-// Other configurable variables that usually don't need changing
-
-// How often is the web dashboard updated
-#define WIFI_WEB_DASHBOARD_UPDATE_INTERVAL 3000
-
-// Name of the access point created
-#define WIFI_CONFIG_PORTAL_ACCESS_POINT_NAME "CarCluster"
-
-// Password for the configuration access point
+#define WIFI_WEB_DASHBOARD_UPDATE_INTERVAL 1000
+#define WIFI_CONFIG_PORTAL_ACCESS_POINT_NAME "CarCluster-F10"
 #define WIFI_CONFIG_PORTAL_ACCESS_POINT_PASSWORD "carcluster"
-
-// Timeout of the config portal after which it will continue in wifi-less mode
 #define WIFI_CONFIG_PORTAL_TIMEOUT 180
 
-// What is the maximum character length of the serial message
 #define MAX_SERIAL_MESSAGE_LENGTH 250
-
-// Baud rate of the USB serial connection (if using Simhub set this to the same value)
 #define SERIAL_BAUD_RATE 921600
 
-// UDP/TCP ports used for various games and other stuff.
-// Only applicable if wifi is enabled.
 #define WIFI_FORZA_UDP_PORT 1101
-#define WIFI_BEAM_UDP_PORT 1102
+#define WIFI_BEAM_UDP_PORT 4444
 #define WIFI_WEB_DASHBOARD_PORT 80
 
-// ------------------------ END OTHER CONFIGURATION -------------------
+// ----------------------------- Libraries and project modules --------------------------------------------------------
+#include <SPI.h>
 
-
-// Libraries
-#include <SPI.h> // CAN Bus Shield SPI Pin Library (arduino system library)
-
-#include "src/Libs/ArduinoJson/ArduinoJson.h" // For parsing serial data and for ESPDash ( https://github.com/bblanchon/ArduinoJson )
-#include "src/Libs/MCP_CAN/mcp_can.h" // CAN Bus Shield Compatibility Library ( https://github.com/coryjfowler/MCP_CAN_lib )
-
+#include "src/Libs/ArduinoJson/ArduinoJson.h"
+#include "src/Libs/MCP_CAN/mcp_can.h"
 #include "src/Games/GameSimulation.h"
 #include "src/Games/SimhubGame.h"
+#include "src/Clusters/BMW_F/BMWFSeriesCluster.h"
 
-// CAN bus configuration
-MCP_CAN CAN(SPI_CS_PIN);  // Set CS pin
+MCP_CAN CAN(SPI_CS_PIN);
+BMWFSeriesCluster cluster(CAN);
 
-// CAN bus Receiving
-long unsigned int canRxId;
-unsigned char canRxLen = 0;
-unsigned char canRxBuf[8];
-char canRxMsgString[128];  // Array to store serial string
+ClusterConfiguration defaultClusterConfig = BMWFSeriesCluster::clusterConfig();
+ClusterConfiguration clusterConfig = ClusterConfiguration::updatedFromDefaults(
+    defaultClusterConfig,
+    SPEED_CORRECTION_FACTOR,
+    RPM_CORRECTION_FACTOR,
+    MAXIMUM_RPM,
+    MAXIMUM_SPEED,
+    MINIMUM_COOLANT_TEMPERATURE,
+    MAXIMUM_COOLANT_TEMPERATURE);
 
-// Cluster initialization
-#if CLUSTER == 1
-  // BMW F10
-  #include "src/Clusters/BMW_F/BMWFSeriesCluster.h"
-  BMWFSeriesCluster cluster(CAN, false);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig(false);
-#elif CLUSTER == 2
-  // F Series Mini
-  #include "src/Clusters/BMW_F/BMWFSeriesCluster.h"
-  BMWFSeriesCluster cluster(CAN, true);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig(true);
-#elif CLUSTER == 3
-  // Golf 7
-  #include "src/Clusters/VW_MQB/VWMQBCluster.h"
-  VWMQBCluster cluster(CAN, ANALOG_FUEL_POT_INC, ANALOG_FUEL_POT_DIR, ANALOG_FUEL_POT_CS1, ANALOG_FUEL_POT_CS2);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig();
-#elif CLUSTER == 4
-  // VW Polo  6R
-  #include "src/Clusters/VW_PQ25/VWPQ25Cluster.h"
-  VWPQ25Cluster cluster(CAN, ANALOG_FUEL_POT_INC, ANALOG_FUEL_POT_DIR, ANALOG_FUEL_POT_CS1, ANALOG_FUEL_POT_CS2, VWPQ_SPRINKLER_WATER_SENSOR_PIN, VWPQ_COOLANT_SHORTAGE_PIN, VWPQ_OIL_PRESSURE_SWITCH_PIN, VWPQ_HANDBRAKE_INDICATOR_PIN, VWPQ_BRAKE_FLUID_WARNING_PIN);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig();
-#elif CLUSTER == 5
-  // Skoda Superb 2
-  #include "src/Clusters/VW_PQ46/VWPQ46Cluster.h"
-  VWPQ46Cluster cluster(CAN, ANALOG_FUEL_POT_INC, ANALOG_FUEL_POT_DIR, ANALOG_FUEL_POT_CS1, ANALOG_FUEL_POT_CS2, VWPQ_SPRINKLER_WATER_SENSOR_PIN, VWPQ_COOLANT_SHORTAGE_PIN, VWPQ_OIL_PRESSURE_SWITCH_PIN, VWPQ_HANDBRAKE_INDICATOR_PIN, VWPQ_BRAKE_FLUID_WARNING_PIN);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig();
-#elif CLUSTER == 6
-  // BMW E60
-  #include "src/Clusters/BMW_E/BMWESeriesCluster.h"
-  BMWESeriesCluster cluster(CAN, ANALOG_FUEL_POT_INC, ANALOG_FUEL_POT_DIR, ANALOG_FUEL_POT_CS1, ANALOG_FUEL_POT_CS2, BMWE_HANDBRAKE_INDICATOR_PIN);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig();
-#elif CLUSTER == 7
-  // BMW E46
-  #include "src/Clusters/BMW_E46/BMWE46Cluster.h"
-  BMWE46Cluster cluster(CAN, ANALOG_FUEL_POT_INC, ANALOG_FUEL_POT_DIR, ANALOG_FUEL_POT_CS1, ANALOG_FUEL_POT_CS2, BMWE_HANDBRAKE_INDICATOR_PIN, BMWE46_SPEED_PIN, BMWE46_ABS_PIN, BMWE46_FAKE_CONSUMPTION);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig();
-#elif CLUSTER == 99
-  // Golf 7 Passthrough mode
-  MCP_CAN CAN2(VWMQB_PASS_CAN2_CS);  // Set CS pin
-
-  long unsigned int canRxId2;
-  unsigned char canRxLen2 = 0;
-  unsigned char canRxBuf2[8];
-
-  #include "src/Clusters/VW_MQB/VWMQBCluster.h"
-  VWMQBCluster cluster(CAN2, ANALOG_FUEL_POT_INC, ANALOG_FUEL_POT_DIR, ANALOG_FUEL_POT_CS1, ANALOG_FUEL_POT_CS2, true);
-  ClusterConfiguration defaultClusterConfig = cluster.clusterConfig();
-#endif
-
-// Game simulation variables
-ClusterConfiguration clusterConfig = ClusterConfiguration::updatedFromDefaults(defaultClusterConfig, SPEED_CORRECTION_FACTOR, RPM_CORRECTION_FACTOR, MAXIMUM_RPM, MAXIMUM_SPEED, MINIMUM_COOLANT_TEMPERATURE, MAXIMUM_COOLANT_TEMPERATURE, ANALOG_FUEL_POT_MINIMUM_VALUE, ANALOG_FUEL_POT_MAXIMUM_VALUE, ANALOG_FUEL_POT_MINIMUM_VALUE2, ANALOG_FUEL_POT_MAXIMUM_VALUE2);
 GameState game(clusterConfig);
 SimhubGame simhubGame(game);
 
 #if WIFI_ENABLED == 1
-  
-  // Wifi/web portal variables
-  #include "src/Other/WifiFunctions.h"
-  #include "src/Other/WebDashboard.h"
-  #include "src/Other/mongoose/mongoose.h"
-  #include "src/Other/mongoose/mongoose_glue.h"
+#include "src/Other/WifiFunctions.h"
+#include "src/Other/WebDashboard.h"
+#include "src/Other/mongoose/mongoose.h"
+#include "src/Other/mongoose/mongoose_glue.h"
+#include "src/Games/ForzaHorizonGame.h"
+#include "src/Games/BeamNGGame.h"
 
-  #include "src/Games/ForzaHorizonGame.h"
-  #include "src/Games/BeamNGGame.h"
+WifiFunctions wifiFunctions;
+WebDashboard webDashboard(game, WIFI_WEB_DASHBOARD_UPDATE_INTERVAL);
+ForzaHorizonGame forzaHorizonGame(game, WIFI_FORZA_UDP_PORT);
+BeamNGGame beamNGGame(game, WIFI_BEAM_UDP_PORT);
 
-  WifiFunctions wifiFunctions;
-  WebDashboard webDashboard(game, WIFI_WEB_DASHBOARD_UPDATE_INTERVAL);
+void webDashboardGetState(struct state* data) {
+  webDashboard.getState(data);
+}
 
-  ForzaHorizonGame forzaHorizonGame(game, WIFI_FORZA_UDP_PORT);
-  BeamNGGame beamNGGame(game, WIFI_BEAM_UDP_PORT);
+void webDashBoardSetState(struct state* data) {
+  webDashboard.setState(data);
+}
 
-  void webDashboardGetState(struct state *data) {
-    webDashboard.getState(data);
+bool webDashboardCheckSteeringButtonPressed(void) {
+  return false;
+}
+
+void webDashboardSetSteeringButtonPressed(struct mg_str params) {
+  webDashboard.steeringWheelAction(params);
+}
+#endif
+
+JsonDocument serialDocument;
+
+void initializeCan();
+void readSerialJson();
+void drainCanReceiveBuffer();
+
+void initializeCan() {
+  while (CAN.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ) != CAN_OK) {
+    Serial.println("[CAN] MCP2515 initialization failed; retrying");
+    delay(250);
   }
-  void webDashBoardSetState(struct state *data) {
-    webDashboard.setState(data);
-  }
-  bool webDashboardCheckSteeringButtonPressed(void) {
-    return false;
-  }
-  void webDashboardSetSteeringButtonPressed(struct mg_str params) {
-    webDashboard.steeringWheelAction(params);
-  }
-#endif 
 
-// Serial JSON parsing
-JsonDocument doc;
+  CAN.setMode(MCP_NORMAL);
+  Serial.println("[CAN] MCP2515 ready at 500 kbit/s");
+}
 
 void setup() {
-  // Define the outputs
   pinMode(SPI_CS_PIN, OUTPUT);
   pinMode(CAN_INT, INPUT);
 
-  //Begin with Serial Connection
   Serial.begin(SERIAL_BAUD_RATE);
+  delay(300);
+  Serial.println("Starting CarCluster-F10-Enhanced optimized build");
 
-  delay(1000);
-  Serial.println("Starting CarCluster...");
-
-  #if WIFI_ENABLED == 1
-    wifiFunctions.begin(WIFI_CONFIG_PORTAL_ACCESS_POINT_NAME, WIFI_CONFIG_PORTAL_ACCESS_POINT_PASSWORD, WIFI_CONFIG_PORTAL_TIMEOUT);
-    mongoose_init();
-    mg_log_set(MG_LL_ERROR);
-    mongoose_set_http_handlers("state", webDashboardGetState, webDashBoardSetState);
-    mongoose_set_http_handlers("steering_button_pressed", webDashboardCheckSteeringButtonPressed, webDashboardSetSteeringButtonPressed);
-    forzaHorizonGame.begin();
-    beamNGGame.begin();
-  #endif
-
+  initializeCan();
   simhubGame.begin();
-  
-  #if CLUSTER == 6
-    INT8U canSpeed = CAN_100KBPS;
-  #else
-    INT8U canSpeed = CAN_500KBPS;
-  #endif
 
-  //Begin with CAN Bus Initialization
-START_INIT:
-  if (CAN_OK == CAN.begin(MCP_ANY, canSpeed, MCP_8MHZ))  // init can bus
-  {
-    Serial.println("CAN BUS Shield init ok!");
-  } else {
-    Serial.println("CAN BUS Shield init fail");
-    Serial.println("Init CAN BUS Shield again");
-    delay(100);
-    goto START_INIT;
-  }
-  CAN.setMode(MCP_NORMAL);
+#if WIFI_ENABLED == 1
+  wifiFunctions.begin(
+      WIFI_CONFIG_PORTAL_ACCESS_POINT_NAME,
+      WIFI_CONFIG_PORTAL_ACCESS_POINT_PASSWORD,
+      WIFI_CONFIG_PORTAL_TIMEOUT);
 
-  #if CLUSTER == 99
-    pinMode(VWMQB_PASS_CAN2_INT, INPUT);
+  mongoose_init();
+  mg_log_set(MG_LL_ERROR);
+  mongoose_set_http_handlers("state", webDashboardGetState, webDashBoardSetState);
+  mongoose_set_http_handlers(
+      "steering_button_pressed",
+      webDashboardCheckSteeringButtonPressed,
+      webDashboardSetSteeringButtonPressed);
 
-    //Begin with CAN Bus 2 Initialization
-START_INIT2:
-    if (CAN_OK == CAN2.begin(MCP_ANY, canSpeed, MCP_8MHZ))  // init can bus
-    {
-      Serial.println("CAN2 BUS Shield init ok!");
-    } else {
-      Serial.println("CAN2 BUS Shield init fail");
-      Serial.println("Init CAN2 BUS Shield again");
-      delay(100);
-      goto START_INIT2;
-    }
-    CAN2.setMode(MCP_NORMAL);
-  #endif
+  forzaHorizonGame.begin();
+  beamNGGame.begin();
+#endif
 }
 
 void loop() {
-  // Update the cluster with current state of the game
   cluster.updateWithGame(game);
-
-  // Serial message handling
   readSerialJson();
+  drainCanReceiveBuffer();
 
-  // Handle data from connected CAN hardware
-  readCanBuffer();
+#if WIFI_ENABLED == 1
+  webDashboard.update();
+  mongoose_poll();
 
-  // Update the web dashboard
-  #if WIFI_ENABLED == 1
-    webDashboard.update();
-    mongoose_poll();
-    static unsigned long lastWifiCheck = 0;
-
-  if (millis() - lastWifiCheck > 5000) {
-    lastWifiCheck = millis();
-
-    if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("WiFi Lost. Reconnecting...");
-      WiFi.disconnect(true);
-      WiFi.begin();
-      
-    }
+  static unsigned long lastWifiReconnectAttempt = 0;
+  if (WiFi.status() != WL_CONNECTED && millis() - lastWifiReconnectAttempt >= 10000) {
+    lastWifiReconnectAttempt = millis();
+    WiFi.reconnect();
   }
-  #endif
-  static unsigned long lastPrint = 0;
+#endif
 
-  if (millis() - lastPrint > 2000) {
-    lastPrint = millis();
-    Serial.printf("Heap: %u | Min: %u\n",
-      ESP.getFreeHeap(),
-      ESP.getMinFreeHeap());
-  }
-  //  delay(1);
+  // Yield to the ESP32 Wi-Fi/UDP tasks and avoid a 100% busy loop.
+  delay(1);
 }
 
 void readSerialJson() {
-  //Check to see if anything is available in the serial receive buffer
+  static char message[MAX_SERIAL_MESSAGE_LENGTH];
+  static size_t messagePosition = 0;
+  static bool droppingOversizeMessage = false;
+
   while (Serial.available() > 0) {
-    //Create a place to hold the incoming message
-    static char message[MAX_SERIAL_MESSAGE_LENGTH];
-    static unsigned int message_pos = 0;
+    const char incoming = static_cast<char>(Serial.read());
 
-    //Read the next available byte in the serial receive buffer
-    char inByte = Serial.read();
+    if (incoming == '\r') continue;
 
-    //Message coming in (check not terminating character) and guard for over message size
-    if (inByte != '\n' && (message_pos < MAX_SERIAL_MESSAGE_LENGTH - 1)) {
-      //Add the incoming byte to our message
-      message[message_pos] = inByte;
-      message_pos++;
-    } else {
-      //Add null character to string
-      message[message_pos] = '\0';
+    if (incoming != '\n') {
+      if (!droppingOversizeMessage && messagePosition < sizeof(message) - 1) {
+        message[messagePosition++] = incoming;
+      } else {
+        droppingOversizeMessage = true;
+      }
+      continue;
+    }
 
-      //Serial.print("I got: @");
-      //Serial.print(message);
-      //Serial.println("@");
+    if (droppingOversizeMessage) {
+      Serial.println("[Serial] ignored oversized JSON message");
+      messagePosition = 0;
+      droppingOversizeMessage = false;
+      continue;
+    }
 
-      DeserializationError error = deserializeJson(doc, message);
-      if (error) {
-        Serial.print(F("deserializeJson() failed: "));
-        Serial.println(error.c_str());
-        message_pos = 0;
-        return;
+    message[messagePosition] = '\0';
+    messagePosition = 0;
+
+    if (message[0] == '\0') continue;
+
+    const DeserializationError error = deserializeJson(serialDocument, message);
+    if (error) {
+      Serial.print("[Serial] JSON error: ");
+      Serial.println(error.c_str());
+      continue;
+    }
+
+    const uint8_t action = serialDocument["action"] | 255;
+
+    if (action == 0) {
+      const uint32_t address = serialDocument["address"] | 0;
+      if (address > 0x7FF) {
+        Serial.println("[Serial] ignored invalid standard CAN ID");
+        continue;
       }
 
-      uint8_t action = doc["action"];
+      uint8_t payload[8] = {
+          static_cast<uint8_t>(serialDocument["p1"] | 0),
+          static_cast<uint8_t>(serialDocument["p2"] | 0),
+          static_cast<uint8_t>(serialDocument["p3"] | 0),
+          static_cast<uint8_t>(serialDocument["p4"] | 0),
+          static_cast<uint8_t>(serialDocument["p5"] | 0),
+          static_cast<uint8_t>(serialDocument["p6"] | 0),
+          static_cast<uint8_t>(serialDocument["p7"] | 0),
+          static_cast<uint8_t>(serialDocument["p8"] | 0)};
 
-      // Action 0 means "send following message to CAN bus"
-      // Example: {"action":0, "address":1644, "p1":128, "p2":20, "p3":76, "p4":85, "p5":9, "p6":66, "p7":108, "p8":117}
-      if (action == 0) {
-        short address = doc["address"];
-        uint8_t p1 = doc["p1"];
-        uint8_t p2 = doc["p2"];
-        uint8_t p3 = doc["p3"];
-        uint8_t p4 = doc["p4"];
-        uint8_t p5 = doc["p5"];
-        uint8_t p6 = doc["p6"];
-        uint8_t p7 = doc["p7"];
-        uint8_t p8 = doc["p8"];
-        Serial.println(address);
-
-        unsigned char DataToSend[8] = { p1, p2, p3, p4, p5, p6, p7, p8 };
-        CAN.sendMsgBuf(address, 0, 8, DataToSend);
-      } else if (action == 10) {
-        // Used to decode custom protocol from Simhub in the following format:
-        // {"action":10, "spe":54, "gea":"2", "rpm":3590, "mrp":7999, "lft":0, "rit":0, "oit":0, "pau":0, "run":0, "fue":0, "hnb":0, "abs":0, "tra":0}
-        simhubGame.decodeSerialData(doc);
-      }
-
-      //Reset for the next message
-      message_pos = 0;
+      CAN.sendMsgBuf(address, 0, 8, payload);
+    } else if (action == 10) {
+      simhubGame.decodeSerialData(serialDocument);
     }
   }
 }
 
-void readCanBuffer() {
-  if (!digitalRead(CAN_INT)) {                      // If CAN0_INT pin is low, read receive buffer
-    CAN.readMsgBuf(&canRxId, &canRxLen, canRxBuf);  // Read data: len = data length, buf = data byte(s)
-
-    #if CLUSTER == 99
-      cluster.handleReceivedData(canRxId, canRxLen, canRxBuf);
-    #endif
-
-    // Uncomment if you want to see what is being received on the CAN bus
-    /*
-    if ((canRxId & 0x80000000) == 0x80000000)  // Determine if ID is standard (11 bits) or extended (29 bits)
-      sprintf(canRxMsgString, "Extended ID: 0x%.8lX  DLC: %1d  Data:", (canRxId & 0x1FFFFFFF), canRxLen);
-    else
-      sprintf(canRxMsgString, "Standard ID: 0x%.3lX       DLC: %1d  Data:", canRxId, canRxLen);
-
-    Serial.print(canRxMsgString);
-
-    if ((canRxId & 0x40000000) == 0x40000000) {  // Determine if message is a remote request frame.
-      sprintf(canRxMsgString, " REMOTE REQUEST FRAME");
-      Serial.print(canRxMsgString);
-    } else {
-      for (byte i = 0; i < canRxLen; i++) {
-        sprintf(canRxMsgString, " 0x%.2X", canRxBuf[i]);
-        Serial.print(canRxMsgString);
-      }
-    }
-
-    Serial.println();
-    */
+void drainCanReceiveBuffer() {
+  // This F10-only build does not use inbound CAN data, but the MCP2515 RX buffers
+  // still need to be drained to avoid overflow and a permanently asserted INT pin.
+  uint8_t drained = 0;
+  while (!digitalRead(CAN_INT) && drained < 8) {
+    unsigned long rxId = 0;
+    uint8_t length = 0;
+    uint8_t payload[8] = {};
+    CAN.readMsgBuf(&rxId, &length, payload);
+    drained++;
   }
-
-  #if CLUSTER == 99
-    // From cluster to car
-    if (!digitalRead(VWMQB_PASS_CAN2_INT)) {                      // If CAN0_INT pin is low, read receive buffer
-      CAN2.readMsgBuf(&canRxId2, &canRxLen2, canRxBuf2);  // Read data: len = data length, buf = data byte(s)
-
-      // Forward anything that we get back to the car
-      CAN.sendMsgBuf(canRxId2, canRxLen2, canRxBuf2);
-    }
-  #endif
 }

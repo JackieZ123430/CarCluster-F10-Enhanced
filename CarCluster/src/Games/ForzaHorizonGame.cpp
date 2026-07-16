@@ -1,77 +1,90 @@
 // ####################################################################################################################
-// 
-// Code part of CarCluster project by Andrej Rolih. See .ino file more details
-// 
+// Forza UDP integration retained for the BMW F10 build
+// Original integration: https://github.com/r00li/CarCluster
 // ####################################################################################################################
 
 #include "ForzaHorizonGame.h"
 
-ForzaHorizonGame::ForzaHorizonGame(GameState& game, int port): Game(game) {
-  this->port = port;
+#include <math.h>
+#include <string.h>
+
+namespace {
+
+float readFloat(const uint8_t* data, size_t offset) {
+  float value = 0.0f;
+  memcpy(&value, data + offset, sizeof(value));
+  return isfinite(value) ? value : 0.0f;
 }
 
+uint8_t readByte(const uint8_t* data, size_t offset) {
+  return data[offset];
+}
+
+}  // namespace
+
+ForzaHorizonGame::ForzaHorizonGame(GameState& game, uint16_t port)
+    : Game(game), port(port) {}
+
 void ForzaHorizonGame::begin() {
-  // Forza (Horizon) sends data as a UDP blob of data
-  // Telemetry protocol described here: https://medium.com/@makvoid/building-a-digital-dashboard-for-forza-using-python-62a0358cb43b
-  // FM2023 protocol described here: https://github.com/r00li/CarCluster/pull/7
-
-  if (forzaUdp.listen(port)) {
-    forzaUdp.onPacket([this](AsyncUDPPacket packet) {
-      if (packet.length() == 324 || packet.length() == 331) {
-        char dataBuff[4];  // four bytes in a float 32
-        bool isFM2023Format = packet.length() == 331;
-
-        // CURRENT_ENGINE_RPM
-        memcpy(dataBuff, (packet.data() + 16), 4);
-        gameState.rpm = *((float*)dataBuff);
-
-        // IDLE_ENGINE_RPM
-        //memcpy(dataBuff, (packet.data() + 12), 4);
-        //if (idle_rpm != *((float*)dataBuff)) {
-        //  idle_rpm = *((float*)dataBuff);
-        //}
-
-        // MAX_ENGINE_RPM
-        memcpy(dataBuff, (packet.data() + 8), 4);
-        float max_rpm = *((float*)dataBuff);
-
-        if (max_rpm == 0) {
-          gameState.doorOpen = true;  // We are in a menu
-        } else {
-          gameState.doorOpen = false;
-        }
-
-        if (max_rpm > gameState.configuration.maximumRPMValue) {
-          gameState.rpm = map(gameState.rpm, 0, max_rpm, 0, gameState.configuration.maximumRPMValue);
-        }
-
-        // SPEED
-        int speedMemoryOffset = isFM2023Format ? 244 : 256;
-        memcpy(dataBuff, (packet.data() + speedMemoryOffset), 4);
-        int someSpeed = *((float*)dataBuff);
-        someSpeed = someSpeed * 3.6;
-        gameState.speed = someSpeed;
-
-        // GEAR
-        int gearMemoryOffset = isFM2023Format ? 307 : 319;
-        memcpy(dataBuff, (packet.data() + gearMemoryOffset), 1);
-        int forzaGear = (int)(dataBuff[0]);
-        if (forzaGear == 0) {
-          gameState.gear = GearState_Auto_R;
-        } else if (forzaGear > 10) {
-          gameState.gear = GearState_Auto_D;
-        } else {
-          gameState.gear = static_cast<GearState>(forzaGear);
-        }
-        if (max_rpm == 0) { 
-          gameState.gear = GearState_Auto_P; // Idle
-        }
-
-        // HANDBRAKE
-        memcpy(dataBuff, (packet.data() + 318), 1);
-        int handbrake = (int)(dataBuff[0]);
-        gameState.handbrake = handbrake > 0 ? true : false;
-      }
-    });
+  if (!forzaUdp.listen(port)) {
+    Serial.printf("[Forza] UDP listen failed on port %u\n", port);
+    return;
   }
+
+  Serial.printf("[Forza] UDP listening on port %u\n", port);
+
+  forzaUdp.onPacket([this](AsyncUDPPacket packet) {
+    if (packet.length() != 324 && packet.length() != 331) return;
+
+    const uint8_t* bytes = packet.data();
+    const bool motorsport2023 = packet.length() == 331;
+
+    const float maximumRpm = readFloat(bytes, 8);
+    const float currentRpm = readFloat(bytes, 16);
+    const float speedMps = readFloat(bytes, motorsport2023 ? 244 : 256);
+
+    gameState.time = millis();
+    gameState.ignition = maximumRpm > 0.0f;
+    gameState.engineRunning = currentRpm > 50.0f;
+    gameState.rpm = static_cast<int>(currentRpm);
+
+    if (maximumRpm > gameState.configuration.maximumRPMValue && maximumRpm > 0.0f) {
+      gameState.rpm = static_cast<int>(
+          currentRpm * gameState.configuration.maximumRPMValue / maximumRpm);
+    }
+
+    gameState.speed = static_cast<int>(speedMps * 3.6f);
+    if (gameState.speed < 0) gameState.speed = 0;
+
+    const uint8_t forzaGear = readByte(bytes, motorsport2023 ? 307 : 319);
+    gameState.gearIndex = 0;
+
+    if (!gameState.ignition) {
+      gameState.gear = GearState_Auto_P;
+      gameState.gearLetter = 'P';
+      gameState.doorOpen = true;  // menu/not driving indication retained from the original project
+    } else if (forzaGear == 0) {
+      gameState.gear = GearState_Auto_R;
+      gameState.gearLetter = 'R';
+      gameState.doorOpen = false;
+    } else if (forzaGear == 1) {
+      gameState.gear = GearState_Auto_N;
+      gameState.gearLetter = 'N';
+      gameState.doorOpen = false;
+    } else {
+      gameState.gear = GearState_Auto_D;
+      gameState.gearLetter = 'D';
+      gameState.gearIndex = forzaGear > 1 ? static_cast<uint8_t>(forzaGear - 1) : 0;
+      if (gameState.gearIndex > 8) gameState.gearIndex = 8;
+      gameState.doorOpen = false;
+    }
+
+    gameState.doorFL = gameState.doorOpen;
+    gameState.doorFR = false;
+    gameState.doorRL = false;
+    gameState.doorRR = false;
+
+    const size_t handbrakeOffset = motorsport2023 ? 306 : 318;
+    gameState.handbrake = readByte(bytes, handbrakeOffset) != 0;
+  });
 }
