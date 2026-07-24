@@ -75,8 +75,6 @@ void BMWFSeriesCluster::sendBasicDriveInfo(GameState& game, int oilTemperature) 
   };
   CAN.sendMsgBuf(0x19B, 0, 8, restraintWithCRC);
 
-  // 0x26A is not transmitted without a verified vehicle capture.
-
   unsigned char restraint2WithoutCRC[] = {
     static_cast<uint8_t>(0xE0 | counter4Bit), 0xF1, 0xF0, 0xF2, 0xF2, 0xFE
   };
