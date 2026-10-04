@@ -9,6 +9,18 @@ https://github.com/r00li/CarCluster
 Thanks to r00li for the original CarCluster project.  
 感谢 r00li 创建原始 CarCluster 项目。
 
+# **⚠️⚠️⚠️ 警告 / WARNING**
+
+**本项目为开源项目，不支持任何形式的商业售卖。请勿将本项目、源码、固件或基于本项目制作的相关内容在任何第三方平台（包括但不限于闲鱼等二手交易平台）进行商业售卖。**
+
+**如有 BUG、使用问题或功能反馈，可通过以下方式联系：**
+
+- **抖音：搜索 `55906882640` 或「小白的科技杂物社」**
+- **QQ：`3406210449`**
+
+**This is an open-source project and is NOT intended for commercial resale. Please do not sell this project, its source code, firmware, or derivatives on third-party marketplaces.**
+
+
 ---
 
 ## What is this? / 项目简介
@@ -28,17 +40,6 @@ This fork introduces multiple improvements and behavior fixes for BMW F-series c
 Click to watch youtube video:
 [![Watch the video](https://img.youtube.com/vi/0wwqyG7KJ9c/maxresdefault.jpg)](https://youtu.be/0wwqyG7KJ9c)
 ---
-# **⚠️⚠️⚠️ 警告 / WARNING**
-
-**本项目为开源项目，不支持任何形式的商业售卖。请勿将本项目、源码、固件或基于本项目制作的相关内容在任何第三方平台（包括但不限于闲鱼等二手交易平台）进行商业售卖。**
-
-**如有 BUG、使用问题或功能反馈，可通过以下方式联系：**
-
-- **抖音：搜索 `55906882640` 或「小白的科技杂物社」**
-- **QQ：`3406210449`**
-
-**This is an open-source project and is NOT intended for commercial resale. Please do not sell this project, its source code, firmware, or derivatives on third-party marketplaces.**
-
 
 ## Key Enhancements / 主要改进
 
